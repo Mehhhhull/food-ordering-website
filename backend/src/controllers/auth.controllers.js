@@ -1,4 +1,5 @@
 const userModel=require("../models/user.model")
+const foodPartnerModel=require("../models/foodpartner.model")
 const bcryp=require('becryptjs')
 const jwt=require('jsonwebtoken')
 
@@ -80,8 +81,57 @@ function logoutUser(req,res){
   })
 }
 
+async function registerFoodPartner(req,res){
+  const {name,email,password}=req.body
+
+  const isFoodPartnerAlreadyExsists=await foodPartnerModel.findOne({
+    email
+  })
+  if(isFoodPartnerAlreadyExsists){
+    return res.status(400).json({
+      message:"Food Partner already exsists"
+    })
+  }
+
+
+  const foodPartner=await foodPartnerModel.create({
+    name,
+    email,
+    password:hashedPassword
+  })
+
+  const token=jwt.sign({
+    id:foodPartner._id,
+  }, process.env.JWT_SECRET)
+  
+    res.cookie("token",token)
+
+  res.status(201).json({
+    message:"Food partner registered successfully",
+    foodPartner:{
+      _id:foodPartner._id,
+      email:foodPartner.email,
+      name:foodPartner.name
+    }
+  })
+}
+
+async function loginFoodPartner(req,res){
+}
+
+function logoutFoodPartner(req,res){
+
+}
+
+
+
 module.exports={
   registerUser,
-  loginUser
+  loginUser,
+  logoutUser,
+  registerFoodPartner,
+  loginFoodPartner,
+  logoutFoodPartner
+
 }
 

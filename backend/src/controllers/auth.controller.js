@@ -82,7 +82,7 @@ function logoutUser(req,res){
 }
 
 async function registerFoodPartner(req,res){
-  const {name,email,password}=req.body
+  const {name,email,password,phone,address,contactName }=req.body
 
   const isFoodPartnerAlreadyExsists=await foodPartnerModel.findOne({
     email
@@ -97,7 +97,11 @@ async function registerFoodPartner(req,res){
   const foodPartner=await foodPartnerModel.create({
     name,
     email,
-    password:hashedPassword
+    password:hashedPassword,
+    phone,
+    address,
+    contactName,
+
   })
 
   const token=jwt.sign({
@@ -111,7 +115,10 @@ async function registerFoodPartner(req,res){
     foodPartner:{
       _id:foodPartner._id,
       email:foodPartner.email,
-      name:foodPartner.name
+      name:foodPartner.name,
+      address:foodPartner.address,
+      phone:foodPartner.phone,
+      contactName:foodPartner.contactName,
     }
   })
 }

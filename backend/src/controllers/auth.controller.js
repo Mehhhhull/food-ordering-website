@@ -1,6 +1,6 @@
 const userModel=require("../models/user.model")
 const foodPartnerModel=require("../models/foodpartner.model")
-const bcryp=require('becryptjs')
+const bcrypt=require('bcryptjs')
 const jwt=require('jsonwebtoken')
 
 async function registerUser(req,res){
@@ -25,11 +25,11 @@ async function registerUser(req,res){
     password:hashedPassword
   })
 
-  const token=jwt.siqn({
+  const token=jwt.sign({
     id:user._id,
-  },"process.env.JWT_SECRET")
+  },process.env.JWT_SECRET)
 
-  req.cookie("token",token)
+  res.cookie("token",token)
 
   res.status(201).json({
     message:"User registered successfully",
@@ -48,20 +48,19 @@ async function loginUser(req,res){
     email
   })
   if(!user){
-    res.status(400).json({
+    return res.status(400).json({
       message:"Invalid email or password"
     })
   }
   const isPasswordValid=await bcrypt.compare(password,user.password)
   if(!isPasswordValid){
-    res.status(400).json({
+    return res.status(400).json({
       message:"Invalid email or password"
     })
-
   }
   const token=jwt.sign({
     id:user._id,
-  },"process.env.JWT_SECRET")
+  },process.env.JWT_SECRET)
   res.cookie("token",token)
 
   res.status(200).json({
@@ -93,6 +92,7 @@ async function registerFoodPartner(req,res){
     })
   }
 
+  const hashedPassword= await bcrypt.hash(password,10);
 
   const foodPartner=await foodPartnerModel.create({
     name,

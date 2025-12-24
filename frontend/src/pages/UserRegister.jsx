@@ -1,94 +1,74 @@
-import React, { useState } from 'react'
-import '../styles/auth.css'
+import React from 'react';
+import { Link } from 'react-router-dom';
+import '../../styles/auth-shared.css';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const UserRegister = () => {
-  const [fullName, setFullName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState(null)
 
-  async function handleSubmit(e) {
-    e.preventDefault()
-    setMessage(null)
-    if (!fullName || !email || !password) {
-      setMessage('Please fill all fields')
-      return
-    }
-    setLoading(true)
-    try {
-      const res = await fetch('/api/auth/user/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fullName, email, password })
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.message || 'Registration failed')
-      setMessage(data.message || 'Registered successfully')
-      setFullName('')
-      setEmail('')
-      setPassword('')
-    } catch (err) {
-      setMessage(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
+    const navigate = useNavigate();
 
-  return (
-    <div className="auth-page">
-      <div className="auth-card">
-        <div className="auth-header">
-          <div className="auth-title">Create your account</div>
-          <div className="auth-sub">Sign up as a user to order delicious meals.</div>
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        const firstName = e.target.firstName.value;
+        const lastName = e.target.lastName.value;
+        const email = e.target.email.value;
+        const password = e.target.password.value;
+
+
+        const response = await axios.post("http://localhost:3000/api/auth/user/register", {
+            fullName: firstName + " " + lastName,
+            email,
+            password
+        },
+        {
+            withCredentials: true
+        })
+
+        console.log(response.data);
+
+        navigate("/")
+
+    };
+
+    return (
+        <div className="auth-page-wrapper">
+            <div className="auth-card" role="region" aria-labelledby="user-register-title">
+                <header>
+                    <h1 id="user-register-title" className="auth-title">Create your account</h1>
+                    <p className="auth-subtitle">Join to explore and enjoy delicious meals.</p>
+                </header>
+                <nav className="auth-alt-action" style={{ marginTop: '-4px' }}>
+                    <strong style={{ fontWeight: 600 }}>Switch:</strong> <Link to="/user/register">User</Link> • <Link to="/food-partner/register">Food partner</Link>
+                </nav>
+                <form className="auth-form" onSubmit={handleSubmit} noValidate>
+                    <div className="two-col">
+                        <div className="field-group">
+                            <label htmlFor="firstName">First Name</label>
+                            <input id="firstName" name="firstName" placeholder="Jane" autoComplete="given-name" />
+                        </div>
+                        <div className="field-group">
+                            <label htmlFor="lastName">Last Name</label>
+                            <input id="lastName" name="lastName" placeholder="Doe" autoComplete="family-name" />
+                        </div>
+                    </div>
+                    <div className="field-group">
+                        <label htmlFor="email">Email</label>
+                        <input id="email" name="email" type="email" placeholder="you@example.com" autoComplete="email" />
+                    </div>
+                    <div className="field-group">
+                        <label htmlFor="password">Password</label>
+                        <input id="password" name="password" type="password" placeholder="••••••••" autoComplete="new-password" />
+                    </div>
+                    <button className="auth-submit" type="submit">Sign Up</button>
+                </form>
+                <div className="auth-alt-action">
+                    Already have an account? <Link to="/user/login">Sign in</Link>
+                </div>
+            </div>
         </div>
+    );
+};
 
-        <form className="form" onSubmit={handleSubmit}>
-          <div className="input">
-            <label>Full name</label>
-            <input
-              type="text"
-              placeholder="Your full name"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-            />
-          </div>
-
-          <div className="input">
-            <label>Email</label>
-            <input
-              type="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-
-          <div className="input">
-            <label>Password</label>
-            <input
-              type="password"
-              placeholder="Create a password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-
-          <button className="primary-btn" type="submit" disabled={loading}>
-            {loading ? 'Creating...' : 'Create account'}
-          </button>
-
-          {message && (
-            <div style={{ textAlign: 'center', marginTop: 12 }}>{message}</div>
-          )}
-
-          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
-            <button className="tertiary" type="button">Have an account? Login</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  )
-}
-
-export default UserRegister
+export default UserRegister;

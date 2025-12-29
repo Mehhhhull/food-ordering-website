@@ -3,13 +3,17 @@
 const mongoose=require('mongoose');
 
 function connectDB(){
-  mongoose.connect("mongodb://localhost:27017/food-view")
+  const mongoURI = process.env.MONGODB_URI || "mongodb://localhost:27017/food-view";
+  
+  mongoose.connect(mongoURI)
     .then(()=>{
-      console.log("Connected to MongoDB");
+      console.log("✅ Connected to MongoDB");
     
   })
   .catch((err)=>{
-    console.log("Error connecting to MongoDB",err);
+    console.log("❌ Error connecting to MongoDB:", err.message);
+    console.log("⚠️  Make sure MongoDB is running");
+    console.log("💡 The server will continue but database operations will fail");
   })
 }
 

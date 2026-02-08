@@ -44,6 +44,12 @@ async function likeFood(req, res) {
       user: user.id,
       food: foodId,
     });
+
+    await foodModel.findByIdAndUpdate(foodId,{
+      $inc:{likeCount:-1}
+    })
+
+
     return res.status(200).json({
       message: "Food item unliked successfully.",
     });
@@ -53,6 +59,11 @@ async function likeFood(req, res) {
     user: user.id,
     food: foodId,
   });
+
+  await foodModel.findByIdAndUpdate(foodId,{
+    $inc:{likeCount1}
+  })
+  
   res.status(201).json({
     message: "Food item liked successfully.",
     like,

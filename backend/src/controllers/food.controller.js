@@ -86,6 +86,10 @@ async function saveFood(req,res){
       food:foodId,
     })
 
+    await foodModel.findByIdAndUpdate(foodId,{
+      $inc:{saveCount:-1}
+    })
+
     return res.status(200).json({
       message:"Food item unsaved successfully."
     })
@@ -94,6 +98,10 @@ async function saveFood(req,res){
   const save =await saveModel.create({
     user:user.id,
     food:foodId,
+  })
+
+  await foodModel.findByIdAndUpdate(foodId,{
+    $inc:{saveCount:1}
   })
 
   res.status(201).json({

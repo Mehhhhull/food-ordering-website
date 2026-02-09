@@ -1,133 +1,169 @@
-import React, { useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom'
-import '../../styles/create-food.css'
+import '../../styles/create-food.css';
+import { useNavigate } from 'react-router-dom';
 
 const CreateFood = () => {
-    const [name, setName] = useState('')
-    const [description, setDescription] = useState('')
-    const [price, setPrice] = useState('')
-    const [video, setVideo] = useState(null)
-    const [loading, setLoading] = useState(false)
-    const navigate = useNavigate()
+    const [ name, setName ] = useState('');
+    const [ description, setDescription ] = useState('');
+    const [ videoFile, setVideoFile ] = useState(null);
+    const [ videoURL, setVideoURL ] = useState('');
+    const [ fileError, setFileError ] = useState('');
+    const fileInputRef = useRef(null);
 
-    const handleVideoChange = (e) => {
-        setVideo(e.target.files[0])
-    }
+    const navigate = useNavigate();
 
-    const handleSubmit = async (e) => {
-        e.preventDefault()
-        
-        if (!name || !description || !price || !video) {
-            alert("Please fill all fields")
-            return
+    useEffect(() => {
+        if (!videoFile) {
+            setVideoURL('');
+            return;
         }
+        const url = URL.createObjectURL(videoFile);
+        setVideoURL(url);
+        return () => URL.revokeObjectURL(url);
+    }, [ videoFile ]);
 
-        setLoading(true)
-        const formData = new FormData()
-        formData.append('name', name)
-        formData.append('description', description)
-        formData.append('price', price)
-        formData.append('video', video)
+    const onFileChange = (e) => {
+        const file = e.target.files && e.target.files[ 0 ];
+        if (!file) { setVideoFile(null); setFileError(''); return; }
+        if (!file.type.startsWith('video/')) { setFileError('Please select a valid video file.'); return; }
+        setFileError('');
+        setVideoFile(file);
+    };
 
-        try {
-            await axios.post(
-                "http://localhost:3000/api/foods",
-                formData,
-                { 
-                    withCredentials: true,
-                    headers: { 'Content-Type': 'multipart/form-data' }
-                }
-            )
-            alert("Food item created successfully!")
-            setName('')
-            setDescription('')
-            setPrice('')
-            setVideo(null)
-        } catch (error) {
-            console.error("Error creating food:", error)
-            alert("Error creating food item")
-        } finally {
-            setLoading(false)
-        }
-    }
+    const onDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const file = e.dataTransfer?.files?.[ 0 ];
+        if (!file) { return; }
+        if (!file.type.startsWith('video/')) { setFileError('Please drop a valid video file.'); return; }
+        setFileError('');
+        setVideoFile(file);
+    };
 
-    const handleLogout = async () => {
-        try {
-            await axios.get("http://localhost:3000/api/auth/food-partner/logout", { withCredentials: true })
-            navigate("/food-partner/login")
-        } catch (error) {
-            console.error("Logout error:", error)
-        }
-    }
+    const onDragOver = (e) => {
+        e.preventDefault();
+    };
+
+    const openFileDialog = () => fileInputRef.current?.click();
+
+    const onSubmit = async (e) => {
+        e.preventDefault();
+
+        const formData = new FormData();
+
+        formData.append('name', name);
+        formData.append('description', description);
+        formData.append("video", videoFile);
+
+        const response = await axios.post("http://localhost:3000/api/food", formData, {
+            withCredentials: true,
+        })
+
+        console.log(response.data);
+        navigate("/"); // Redirect to home or another page after successful creation
+        // Optionally reset
+        // setName(''); setDescription(''); setVideoFile(null);
+    };
+
+    const isDisabled = useMemo(() => !name.trim() || !videoFile, [ name, videoFile ]);
 
     return (
-        <div className="create-food-container">
-            <header className="create-food-header">
-                <h1>Create Food Item</h1>
-                <button onClick={handleLogout} className="logout-btn">Logout</button>
-            </header>
+        <div className="create-food-page">
+            <div className="create-food-card">
+                <header className="create-food-header">
+                    <h1 className="create-food-title">Create Food</h1>
+                    <p className="create-food-subtitle">Upload a short video, give it a name, and add a description.</p>
+                </header>
 
-            <form onSubmit={handleSubmit} className="create-food-form">
-                <div className="form-group">
-                    <label htmlFor="name">Food Name</label>
-                    <input
-                        type="text"
-                        id="name"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="Enter food name"
-                        required
-                    />
-                </div>
+                <form className="create-food-form" onSubmit={onSubmit}>
+                    <div className="field-group">
+                        <label htmlFor="foodVideo">Food Video</label>
+                        <input
+                            id="foodVideo"
+                            ref={fileInputRef}
+                            className="file-input-hidden"
+                            type="file"
+                            accept="video/*"
+                            onChange={onFileChange}
+                        />
 
-                <div className="form-group">
-                    <label htmlFor="description">Description</label>
-                    <textarea
-                        id="description"
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        placeholder="Enter food description"
-                        rows="4"
-                        required
-                    />
-                </div>
+                        <div
+                            className="file-dropzone"
+                            role="button"
+                            tabIndex={0}
+                            onClick={openFileDialog}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openFileDialog(); } }}
+                            onDrop={onDrop}
+                            onDragOver={onDragOver}
+                        >
+                            <div className="file-dropzone-inner">
+                                <svg className="file-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                    <path d="M10.8 3.2a1 1 0 0 1 .4-.08h1.6a1 1 0 0 1 1 1v1.6h1.6a1 1 0 0 1 1 1v1.6h1.6a1 1 0 0 1 1 1v7.2a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6.4a1 1 0 0 1 1-1h1.6V3.2a1 1 0 0 1 1-1h1.6a1 1 0 0 1 .6.2z" stroke="currentColor" strokeWidth="1.5" />
+                                    <path d="M9 12.75v-1.5c0-.62.67-1 1.2-.68l4.24 2.45c.53.3.53 1.05 0 1.35L10.2 16.82c-.53.31-1.2-.06-1.2-.68v-1.5" fill="currentColor" />
+                                </svg>
+                                <div className="file-dropzone-text">
+                                    <strong>Tap to upload</strong> or drag and drop
+                                </div>
+                                <div className="file-hint">MP4, WebM, MOV • Up to ~100MB</div>
+                            </div>
+                        </div>
 
-                <div className="form-group">
-                    <label htmlFor="price">Price</label>
-                    <input
-                        type="number"
-                        id="price"
-                        value={price}
-                        onChange={(e) => setPrice(e.target.value)}
-                        placeholder="Enter price"
-                        step="0.01"
-                        required
-                    />
-                </div>
+                        {fileError && <p className="error-text" role="alert">{fileError}</p>}
 
-                <div className="form-group">
-                    <label htmlFor="video">Upload Video</label>
-                    <input
-                        type="file"
-                        id="video"
-                        accept="video/*"
-                        onChange={handleVideoChange}
-                        required
-                    />
-                    {video && <p className="file-selected">{video.name}</p>}
-                </div>
+                        {videoFile && (
+                            <div className="file-chip" aria-live="polite">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                                    <path d="M9 12.75v-1.5c0-.62.67-1 1.2-.68l4.24 2.45c.53.3.53 1.05 0 1.35L10.2 16.82c-.53.31-1.2-.06-1.2-.68v-1.5" />
+                                </svg>
+                                <span className="file-chip-name">{videoFile.name}</span>
+                                <span className="file-chip-size">{(videoFile.size / 1024 / 1024).toFixed(1)} MB</span>
+                                <div className="file-chip-actions">
+                                    <button type="button" className="btn-ghost" onClick={openFileDialog}>Change</button>
+                                    <button type="button" className="btn-ghost danger" onClick={() => { setVideoFile(null); setFileError(''); }}>Remove</button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
 
-                <button 
-                    type="submit" 
-                    className="submit-btn"
-                    disabled={loading}
-                >
-                    {loading ? 'Creating...' : 'Create Food Item'}
-                </button>
-            </form>
+                    {videoURL && (
+                        <div className="video-preview">
+                            <video className="video-preview-el" src={videoURL} controls playsInline preload="metadata" />
+                        </div>
+                    )}
+
+                    <div className="field-group">
+                        <label htmlFor="foodName">Name</label>
+                        <input
+                            id="foodName"
+                            type="text"
+                            placeholder="e.g., Spicy Paneer Wrap"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            required
+                        />
+                    </div>
+
+                    <div className="field-group">
+                        <label htmlFor="foodDesc">Description</label>
+                        <textarea
+                            id="foodDesc"
+                            rows={4}
+                            placeholder="Write a short description: ingredients, taste, spice level, etc."
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                        />
+                    </div>
+
+                    <div className="form-actions">
+                        <button className="btn-primary" type="submit" disabled={isDisabled}>
+                            Save Food
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
-    )
-}
+    );
+};
 
-export default CreateFood
+export default CreateFood;
